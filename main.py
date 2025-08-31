@@ -41,9 +41,10 @@ def main():
     sidebar_data = render_sidebar()
     selected_page = sidebar_data["page"]
     global_filters = sidebar_data["filters"]
+    auth_status = sidebar_data["auth_status"]
     
     # Main content area
-    render_main_content(selected_page, global_filters)
+    render_main_content(selected_page, global_filters, auth_status)
     
     # Footer
     render_footer()
@@ -153,14 +154,42 @@ def apply_custom_styling():
         unsafe_allow_html=True
     )
 
-def render_main_content(selected_page: str, global_filters: Dict[str, Any]):
+def render_main_content(selected_page: str, global_filters: Dict[str, Any], auth_status: Dict[str, Any]):
     """
     Render the main content area based on selected page.
     
     Args:
         selected_page: The currently selected page (internal name)
         global_filters: Applied global filters
+        auth_status: Authentication status information
     """
+    
+    # Check authentication before rendering content
+    if not auth_status.get("is_authenticated", False):
+        st.error("🔐 Authentication Required")
+        st.info("Please authenticate using the sidebar to access BigQuery data.")
+        
+        # Show sample/mock data option
+        st.markdown("---")
+        st.subheader("Demo Mode")
+        st.info("You can view the dashboard with sample data while authentication is set up.")
+        
+        if st.button("🎭 View with Sample Data"):
+            st.session_state["use_sample_data"] = True
+            st.rerun()
+        
+        return
+    
+    # Remove sample data mode if user is authenticated
+    if "use_sample_data" in st.session_state:
+        del st.session_state["use_sample_data"]
+    
+    # Show authentication info briefly
+    auth_method = auth_status.get("auth_method", "unknown")
+    if auth_method == "oauth":
+        st.success(f"🔐 Authenticated via OAuth ({auth_status.get('user_email', 'Unknown User')})")
+    else:
+        st.info("🔑 Authenticated via Service Account")
     
     # Page routing using internal page names
     try:
@@ -187,6 +216,10 @@ def render_main_content(selected_page: str, global_filters: Dict[str, Any]):
     except Exception as e:
         st.error(f"Error rendering page '{selected_page}': {str(e)}")
         st.info("Please try refreshing the page or check your data connection.")
+        
+        # Debug information in development mode
+        if APP_CONFIG.get("debug_mode", False):
+            st.exception(e)
         
         # Debug information in development mode
         if APP_CONFIG.get("debug_mode", False):

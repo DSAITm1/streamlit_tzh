@@ -25,14 +25,22 @@ A comprehensive Streamlit dashboard for analyzing Olist e-commerce operational m
    pip install -r requirements.txt
    ```
 
-3. **Configure Google Cloud credentials**
+3. **Configure authentication** (choose one method)
 
+   **Option A: Service Account (existing method)**
    ```bash
    # Set environment variable for service account
    export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/service-account.json"
-
-   # Or configure in config/settings.py
    ```
+
+   **Option B: OAuth 2.0 (new - enables user authentication)**
+   ```bash
+   # Set OAuth credentials
+   export GOOGLE_OAUTH_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+   export GOOGLE_OAUTH_CLIENT_SECRET="your-client-secret"
+   ```
+   
+   See [OAUTH_SETUP.md](OAUTH_SETUP.md) for detailed OAuth setup instructions.
 
 4. **Run the application**
    ```bash
@@ -51,6 +59,7 @@ A comprehensive Streamlit dashboard for analyzing Olist e-commerce operational m
 
 ### Core Capabilities
 
+- **Flexible Authentication**: Google OAuth 2.0 for users or service accounts for applications
 - **Real-time Analytics**: Live data from BigQuery with multi-level caching
 - **Interactive Filtering**: Date range, geography, product categories
 - **Advanced Visualizations**: Plotly and Altair charts with drill-down capabilities
@@ -144,6 +153,18 @@ DEBUG_MODE="false"
 CACHE_TTL_HOURS="4"
 ```
 
+### OAuth Configuration (Optional)
+
+For Google OAuth 2.0 authentication, set additional environment variables:
+
+```bash
+# OAuth Configuration (optional - enables user authentication)
+GOOGLE_OAUTH_CLIENT_ID="your-oauth-client-id.apps.googleusercontent.com"
+GOOGLE_OAUTH_CLIENT_SECRET="your-oauth-client-secret"
+```
+
+See [OAUTH_SETUP.md](OAUTH_SETUP.md) for detailed OAuth configuration instructions.
+
 ### Configuration Files
 
 Edit `olist_dashboard/config/settings.py` for:
@@ -161,6 +182,8 @@ Edit `olist_dashboard/config/settings.py` for:
 2. **Set secrets** in Streamlit Cloud dashboard:
    ```toml
    # .streamlit/secrets.toml
+   
+   # Option 1: Service Account Authentication (existing method)
    [gcp_service_account]
    type = "service_account"
    project_id = "your-project-id"
@@ -168,6 +191,14 @@ Edit `olist_dashboard/config/settings.py` for:
    private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
    client_email = "service-account@project.iam.gserviceaccount.com"
    # ... other service account fields
+   
+   # Option 2: OAuth Authentication (new - enables user login)
+   [oauth]
+   client_id = "your-oauth-client-id.apps.googleusercontent.com"
+   client_secret = "your-oauth-client-secret"
+   
+   [bigquery]
+   project_id = "your-project-id"
    ```
 3. **Deploy** application
 

@@ -34,18 +34,22 @@ class BigQueryDataLoader:
         """Initialize BigQuery client with proper authentication."""
         try:
             if self.credentials:
+                # Determine credential type for logging
+                cred_type = "OAuth" if hasattr(self.credentials, 'refresh_token') else "Service Account"
+                
                 self.client = bigquery.Client(
                     project=self.project_id,
                     credentials=self.credentials,
                     location=BQ_CONFIG.get("location", "US")
                 )
+                logger.info(f"BigQuery client initialized for project: {self.project_id} using {cred_type}")
             else:
                 # Fallback to default credentials
                 self.client = bigquery.Client(
                     project=self.project_id,
                     location=BQ_CONFIG.get("location", "US")
                 )
-            logger.info(f"BigQuery client initialized for project: {self.project_id}")
+                logger.info(f"BigQuery client initialized for project: {self.project_id} using default credentials")
         except Exception as e:
             logger.error(f"Failed to initialize BigQuery client: {str(e)}")
             st.error(f"Failed to connect to BigQuery: {str(e)}")

@@ -5,8 +5,10 @@ Sidebar component for navigation and global filters.
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Tuple
+import random
 
 from ..config.settings import UI_CONFIG
+from .auth import render_auth_section
 
 def render_sidebar() -> Dict[str, Any]:
     """
@@ -18,6 +20,11 @@ def render_sidebar() -> Dict[str, Any]:
     with st.sidebar:
         # App Header
         st.title("📊 Olist Analytics")
+        st.markdown("---")
+        
+        # Authentication Section
+        auth_status = render_auth_section()
+        
         st.markdown("---")
         
         # Navigation Menu
@@ -38,7 +45,8 @@ def render_sidebar() -> Dict[str, Any]:
         
     return {
         "page": page,
-        "filters": filters
+        "filters": filters,
+        "auth_status": auth_status
     }
 
 def render_navigation() -> str:
@@ -221,12 +229,29 @@ def render_data_status():
     """Render data connection and freshness status."""
     st.subheader("📡 Data Status")
     
-    # This would be connected to actual data status in a real app
-    data_status = st.empty()
+    # Get authentication info from session
+    from .auth import get_auth_status
+    auth_info = get_auth_status()
     
-    # Simulate data status
-    import random
-    is_connected = random.choice([True, True, True, False])  # 75% chance of connection
+    # Show authentication method
+    if auth_info["is_authenticated"]:
+        if auth_info["auth_method"] == "oauth":
+            st.success("🔐 OAuth Authentication")
+            if auth_info["user_email"]:
+                st.caption(f"User: {auth_info['user_email']}")
+        else:
+            st.info("🔑 Service Account Authentication")
+    else:
+        st.error("❌ No Authentication")
+        st.warning("Cannot connect to BigQuery")
+        return
+    
+    # Test BigQuery connection
+    try:
+        from ..data.data_loader import check_data_connection
+        is_connected = check_data_connection()
+    except Exception:
+        is_connected = False
     
     if is_connected:
         st.success("✅ Connected to BigQuery")

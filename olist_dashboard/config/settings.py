@@ -3,25 +3,32 @@ Configuration settings for the Olist Dashboard application.
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import streamlit as st
 from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import Flow
 import json
 
 def get_bigquery_credentials():
     """
-    Get BigQuery credentials from multiple sources (environment variable, Streamlit secrets, or file path).
+    Get BigQuery credentials from multiple sources (OAuth, environment variable, Streamlit secrets, or file path).
     
     Returns:
-        google.oauth2.service_account.Credentials or None
+        google.oauth2.service_account.Credentials or google.oauth2.credentials.Credentials or None
     """
-    # Try environment variable first
+    # Try OAuth credentials first (user authentication)
+    oauth_creds = get_oauth_credentials()
+    if oauth_creds and oauth_creds.valid:
+        return oauth_creds
+    
+    # Try environment variable (service account)
     if "GOOGLE_APPLICATION_CREDENTIALS" in os.environ:
         return service_account.Credentials.from_service_account_file(
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
         )
     
-    # Try Streamlit secrets
+    # Try Streamlit secrets (service account)
     try:
         if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
             return service_account.Credentials.from_service_account_info(
@@ -30,7 +37,7 @@ def get_bigquery_credentials():
     except Exception:
         pass
     
-    # Try relative path
+    # Try relative path (service account)
     try:
         credentials_path = os.path.join(os.getcwd(), "dsai-468212-f4762cc666a5.json")
         if os.path.exists(credentials_path):
@@ -40,9 +47,118 @@ def get_bigquery_credentials():
     
     return None
 
+# OAuth Configuration
+OAUTH_CONFIG = {
+    "client_id": os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
+    "client_secret": os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+    "redirect_uri": "http://localhost:8501",  # Default for local development
+    "scopes": [
+        "https://www.googleapis.com/auth/bigquery",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "openid",
+        "email",
+        "profile"
+    ]
+}
+
+def get_oauth_credentials():
+    """
+    Get OAuth credentials from Streamlit session state.
+    
+    Returns:
+        google.oauth2.credentials.Credentials or None
+    """
+    try:
+        # Check if OAuth credentials are stored in session state
+        if "oauth_credentials" in st.session_state:
+            from google.oauth2.credentials import Credentials
+            creds_dict = st.session_state["oauth_credentials"]
+            
+            # Create credentials object from stored token info
+            credentials = Credentials(
+                token=creds_dict.get("token"),
+                refresh_token=creds_dict.get("refresh_token"),
+                token_uri=creds_dict.get("token_uri"),
+                client_id=creds_dict.get("client_id"),
+                client_secret=creds_dict.get("client_secret"),
+                scopes=creds_dict.get("scopes")
+            )
+            
+            # Check if credentials are valid, refresh if needed
+            if credentials and credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
+                # Update session state with refreshed token
+                st.session_state["oauth_credentials"] = {
+                    "token": credentials.token,
+                    "refresh_token": credentials.refresh_token,
+                    "token_uri": credentials.token_uri,
+                    "client_id": credentials.client_id,
+                    "client_secret": credentials.client_secret,
+                    "scopes": credentials.scopes
+                }
+            
+            return credentials if credentials and credentials.valid else None
+    except Exception as e:
+        st.error(f"Error retrieving OAuth credentials: {str(e)}")
+        # Clear invalid credentials
+        if "oauth_credentials" in st.session_state:
+            del st.session_state["oauth_credentials"]
+    
+    return None
+
+def init_oauth_flow():
+    """
+    Initialize OAuth flow for Google authentication.
+    
+    Returns:
+        Flow object or None if configuration is missing
+    """
+    try:
+        # Try to get OAuth config from Streamlit secrets first
+        client_id = None
+        client_secret = None
+        
+        if hasattr(st, "secrets") and "oauth" in st.secrets:
+            client_id = st.secrets["oauth"].get("client_id")
+            client_secret = st.secrets["oauth"].get("client_secret")
+        
+        # Fallback to environment variables
+        if not client_id:
+            client_id = OAUTH_CONFIG["client_id"]
+        if not client_secret:
+            client_secret = OAUTH_CONFIG["client_secret"]
+        
+        if not client_id or not client_secret:
+            return None
+        
+        # Create flow object
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token"
+                }
+            },
+            scopes=OAUTH_CONFIG["scopes"]
+        )
+        
+        flow.redirect_uri = OAUTH_CONFIG["redirect_uri"]
+        return flow
+        
+    except Exception as e:
+        st.error(f"Failed to initialize OAuth flow: {str(e)}")
+        return None
+
 def get_project_id():
     """Get project ID from credentials or configuration."""
-    # Try Streamlit secrets first
+    # Try OAuth credentials first
+    oauth_creds = get_oauth_credentials()
+    if oauth_creds and hasattr(oauth_creds, 'project_id'):
+        return oauth_creds.project_id
+    
+    # Try Streamlit secrets
     try:
         if hasattr(st, "secrets") and "bigquery" in st.secrets:
             return st.secrets["bigquery"]["project_id"]
