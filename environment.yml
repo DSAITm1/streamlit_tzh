@@ -1,0 +1,74 @@
+name: olist-dashboard
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python version
+  - python=3.12
+
+  # Core Framework
+  - streamlit>=1.28.0
+  - polars>=0.20.0
+
+  # Google Cloud & BigQuery
+  - pip
+  - pip:
+      - google-cloud-bigquery>=3.10.0
+      - google-auth>=2.20.0
+      - google-auth-oauthlib>=1.0.0
+      - google-auth-httplib2>=0.2.0
+
+  # Data Processing & Analysis
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+  - pyarrow>=14.0.0
+
+  # Visualization
+  - plotly>=5.17.0
+  - altair>=5.0.0
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0
+
+  # Utilities & Performance
+  - python-dotenv>=1.0.0
+  - cachetools>=5.3.0
+  - psutil>=5.9.0
+
+  # Date & Time Handling
+  - python-dateutil>=2.8.0
+  - pytz>=2023.3
+
+  # Development & Debugging
+  - pip:
+      - streamlit-aggrid>=0.3.4
+      - streamlit-option-menu>=0.3.6
+      - streamlit-elements>=0.1.0
+
+  # Data Validation & Type Checking
+  - pydantic>=2.0.0
+  - typing-extensions>=4.7.0
+
+  # Logging & Monitoring
+  - pip:
+      - loguru>=0.7.0
+
+  # Testing (Development)
+  - pytest>=7.4.0
+  - pip:
+      - pytest-streamlit>=1.0.0
+
+  # Documentation (Development)
+  - sphinx>=7.1.0
+  - pip:
+      - sphinx-rtd-theme>=1.3.0
+
+  # Additional utilities
+  - requests>=2.31.0
+  - urllib3>=2.0.0
+  - certifi>=2023.7.0
+
+  # Optional: Enhanced Features (uncomment if needed)
+  # - pip:
+  #   - streamlit-authenticator>=0.2.3
+  #   - streamlit-card>=0.0.4
+  #   - streamlit-modal>=0.1.0
