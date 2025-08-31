@@ -173,7 +173,7 @@ olist_dashboard/
 
 ### Data Sources
 
-- **Primary**: BigQuery dataset `project-olist-470307.dbt_olist_stg`
+- **Primary**: BigQuery dataset `dsai-468212.dbt_olist_stg`
 - **Tables Used**:
   - `fact_order_items` (primary fact table)
   - `dim_customer`, `dim_orders`, `dim_product`
@@ -403,7 +403,7 @@ CMD ["streamlit", "run", "main.py", "--server.port=8501"]
 ```bash
 # BigQuery Configuration
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
-BQ_PROJECT_ID=project-olist-470307
+BQ_PROJECT_ID=dsai-468212
 BQ_DATASET=dbt_olist_stg
 
 # Application Configuration

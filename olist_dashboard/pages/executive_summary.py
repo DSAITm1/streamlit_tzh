@@ -35,9 +35,12 @@ def render_executive_summary_page(filters: Dict[str, Any]) -> None:
     
     # Load key metrics
     with st.spinner("Loading executive metrics..."):
-        metrics_data = load_executive_metrics(data_loader)
-        trends_data = load_trends_data(data_loader)
-        geographic_data = load_geographic_data(data_loader)
+        start_date = filters.get("date_range", {}).get("start_date", "2017-01-01")
+        end_date = filters.get("date_range", {}).get("end_date", "2018-09-30")
+        
+        metrics_data = load_executive_metrics(data_loader, start_date, end_date)
+        trends_data = load_trends_data(data_loader, start_date, end_date)
+        geographic_data = load_geographic_data(data_loader, start_date, end_date)
     
     if metrics_data is None:
         st.error("Failed to load executive metrics")
@@ -83,28 +86,28 @@ def render_executive_summary_page(filters: Dict[str, Any]) -> None:
     render_alerts_and_recommendations(metrics_data, trends_data)
 
 @cache_metrics()
-def load_executive_metrics(data_loader) -> Optional[pl.DataFrame]:
+def load_executive_metrics(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load key executive metrics."""
     try:
-        return data_loader.get_executive_metrics()
+        return _data_loader.get_executive_metrics(start_date=start_date, end_date=end_date)
     except Exception as e:
         st.error(f"Error loading executive metrics: {str(e)}")
         return None
 
 @cache_metrics()
-def load_trends_data(data_loader) -> Optional[pl.DataFrame]:
+def load_trends_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load trends data."""
     try:
-        return data_loader.get_daily_trends()
+        return _data_loader.get_daily_trends(start_date=start_date, end_date=end_date)
     except Exception as e:
         st.warning(f"Error loading trends data: {str(e)}")
         return None
 
 @cache_metrics()
-def load_geographic_data(data_loader) -> Optional[pl.DataFrame]:
-    """Load geographic performance data."""
+def load_geographic_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+    """Load geographic data."""
     try:
-        return data_loader.get_geographic_performance()
+        return _data_loader.get_geographic_performance(start_date=start_date, end_date=end_date)
     except Exception as e:
         st.warning(f"Error loading geographic data: {str(e)}")
         return None
@@ -139,6 +142,8 @@ def render_performance_overview(metrics_data: pl.DataFrame, trends_data: pl.Data
         
         # On-time delivery status
         on_time_rate = row.get("on_time_delivery_rate", 0)
+        if on_time_rate is None:
+            on_time_rate = 0
         if on_time_rate >= 90:
             st.success(f"🟢 Delivery: {on_time_rate:.1f}% (Excellent)")
         elif on_time_rate >= 80:
@@ -148,6 +153,8 @@ def render_performance_overview(metrics_data: pl.DataFrame, trends_data: pl.Data
         
         # Customer satisfaction status
         avg_rating = row.get("avg_rating", 0)
+        if avg_rating is None:
+            avg_rating = 0
         if avg_rating >= 4.5:
             st.success(f"🟢 Satisfaction: {avg_rating:.2f}/5.0 (Excellent)")
         elif avg_rating >= 4.0:
@@ -157,6 +164,8 @@ def render_performance_overview(metrics_data: pl.DataFrame, trends_data: pl.Data
         
         # Revenue growth (simplified calculation)
         total_revenue = row.get("total_revenue", 0)
+        if total_revenue is None:
+            total_revenue = 0
         st.info(f"💰 Revenue: R${total_revenue:,.0f}")
         
         # Customer engagement
@@ -191,8 +200,7 @@ def render_geographic_performance(geographic_data: pl.DataFrame) -> None:
         render_top_performers_table(
             geographic_data, 
             "order_count", 
-            top_n=5,
-            title=None
+            top_n=5
         )
     
     with col2:
@@ -204,8 +212,7 @@ def render_geographic_performance(geographic_data: pl.DataFrame) -> None:
             render_top_performers_table(
                 filtered_data,
                 "avg_rating",
-                top_n=5,
-                title=None
+                top_n=5
             )
         else:
             st.info("Insufficient data for rating analysis")
@@ -242,6 +249,8 @@ def generate_alerts(metrics_data: pl.DataFrame, trends_data: pl.DataFrame) -> li
         
         # Delivery performance alert
         on_time_rate = row.get("on_time_delivery_rate", 0)
+        if on_time_rate is None:
+            on_time_rate = 0
         if on_time_rate < 75:
             alerts.append({
                 "type": "critical",
@@ -257,6 +266,8 @@ def generate_alerts(metrics_data: pl.DataFrame, trends_data: pl.DataFrame) -> li
         
         # Customer satisfaction alert
         avg_rating = row.get("avg_rating", 0)
+        if avg_rating is None:
+            avg_rating = 0
         if avg_rating < 3.5:
             alerts.append({
                 "type": "critical",
@@ -280,7 +291,11 @@ def generate_recommendations(metrics_data: pl.DataFrame) -> list:
         row = metrics_data.row(0, named=True)
         
         on_time_rate = row.get("on_time_delivery_rate", 0)
+        if on_time_rate is None:
+            on_time_rate = 0
         avg_rating = row.get("avg_rating", 0)
+        if avg_rating is None:
+            avg_rating = 0
         
         if on_time_rate < 90:
             recommendations.append(

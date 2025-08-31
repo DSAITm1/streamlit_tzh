@@ -195,6 +195,13 @@ def render_sparkline_metric(data: pl.DataFrame, date_col: str, metric_col: str,
         # Calculate current value and change
         current_value = df_pandas[metric_col].iloc[-1]
         previous_value = df_pandas[metric_col].iloc[-2] if len(df_pandas) > 1 else current_value
+        
+        # Handle None values
+        if current_value is None:
+            current_value = 0
+        if previous_value is None:
+            previous_value = current_value if current_value != 0 else 1
+        
         change_pct = ((current_value - previous_value) / previous_value * 100) if previous_value != 0 else 0
         
         # Display metric with chart
@@ -359,7 +366,7 @@ def render_alerts_section(alerts: List[Dict[str, Any]]) -> None:
         st.info(f"🔵 **{alert.get('title', 'Info')}**: {alert.get('message', '')}")
 
 def create_gauge_chart(value: float, title: str, min_val: float = 0, 
-                      max_val: float = 100, target: float = None) -> go.Figure:
+                      max_val: float = 100, target: Optional[float] = None) -> go.Figure:
     """
     Create a gauge chart for metrics.
     

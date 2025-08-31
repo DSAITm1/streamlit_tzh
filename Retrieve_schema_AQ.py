@@ -3,7 +3,7 @@
 Retrieve and save BigQuery table schemas to Markdown.
 
 Defaults (tailored for Olist dbt staging):
-- project: project-olist-470307
+- project: dsai-468212
 - dataset: dbt_olist_stg
 - tables (by default): only fact_/dim_ tables in the dataset
 - out: artifacts/bq_schemas_dbt_olist_stg_dim_fact.md
@@ -30,7 +30,7 @@ from datetime import datetime
 from google.cloud import bigquery
 
 
-DEFAULT_PROJECT = "project-olist-470307"
+DEFAULT_PROJECT = "dsai-468212"
 DEFAULT_DATASET = "dbt_olist_stg"
 # Default to only dim_*/fact_* tables provided in the dataset
 DEFAULT_TABLES = [

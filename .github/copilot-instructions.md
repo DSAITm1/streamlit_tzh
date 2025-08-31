@@ -6,7 +6,7 @@ This is a **Streamlit dashboard** for analyzing Olist e-commerce operational met
 
 ## Architecture & Data Flow
 
-- **Data Source**: BigQuery dataset `project-olist-470307.dbt_olist_stg` with dbt-transformed tables
+- **Data Source**: BigQuery dataset `dsai-468212.dbt_olist_stg` with dbt-transformed tables
 - **Frontend**: Streamlit app with multi-page navigation and interactive visualizations
 - **Data Access**: Python scripts using `google-cloud-bigquery` client
 - **Processing**: Polars for data manipulation, Plotly/Altair for visualizations

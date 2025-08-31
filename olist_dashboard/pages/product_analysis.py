@@ -64,19 +64,19 @@ def render_product_analysis_page(filters: Dict[str, Any]) -> None:
         render_detailed_analysis_tab(weight_impact, category_performance, filters)
 
 @cache_details()
-def load_weight_impact_data(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_weight_impact_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load product weight impact data."""
     try:
-        return data_loader.get_weight_impact(start_date, end_date)
+        return _data_loader.get_weight_impact(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading weight impact data: {str(e)}")
         return None
 
 @cache_details()
-def load_category_performance_data(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_category_performance_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load category performance data."""
     try:
-        return data_loader.get_category_performance(start_date, end_date)
+        return _data_loader.get_category_performance(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading category performance data: {str(e)}")
         return None

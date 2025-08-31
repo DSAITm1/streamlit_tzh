@@ -62,8 +62,8 @@ def get_project_id():
 # BigQuery Configuration
 BQ_CONFIG: Dict[str, Any] = {
     "project_id": get_project_id(),
-    "dataset": "project-olist-470307.dbt_olist_stg",
-    "location": "US",  # Default location for BigQuery
+    "dataset": "dbt_olist_stg",
+    "location": "asia-southeast1",  # Changed from US to asia-southeast1
     "timeout": 60,  # Query timeout in seconds
     "credentials": get_bigquery_credentials(),
 }

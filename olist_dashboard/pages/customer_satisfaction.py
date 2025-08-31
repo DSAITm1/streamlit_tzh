@@ -65,28 +65,28 @@ def render_customer_satisfaction_page(filters: Dict[str, Any]) -> None:
         render_correlation_analysis_tab(data_loader, start_date, end_date)
 
 @cache_details()
-def load_rating_analysis(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_rating_analysis(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load rating analysis data."""
     try:
-        return data_loader.get_rating_analysis(start_date, end_date)
+        return _data_loader.get_rating_analysis(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading rating analysis: {str(e)}")
         return None
 
 @cache_details()
-def load_satisfaction_delivery(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_satisfaction_delivery(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load satisfaction vs delivery data."""
     try:
-        return data_loader.get_satisfaction_vs_delivery(start_date, end_date)
+        return _data_loader.get_satisfaction_vs_delivery(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading satisfaction vs delivery data: {str(e)}")
         return None
 
 @cache_details()
-def load_category_satisfaction(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_category_satisfaction(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load category satisfaction data."""
     try:
-        return data_loader.get_category_satisfaction(start_date, end_date)
+        return _data_loader.get_category_satisfaction(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading category satisfaction: {str(e)}")
         return None

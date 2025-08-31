@@ -1,6 +1,6 @@
 # BigQuery Table Schemas
 
-- Generated: 2025-08-31T19:10:56
+- Generated: 2025-08-31T23:01:18
 - Project: dsai-468212
 - Dataset: dbt_olist_stg
 - Tables: dim_customer, dim_date, dim_geolocation, dim_order_reviews, dim_orders, dim_payment, dim_product, dim_seller, fact_order_items

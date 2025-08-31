@@ -96,7 +96,9 @@ class BigQueryDataLoader:
         try:
             # Configure query job
             job_config = bigquery.QueryJobConfig()
-            job_config.timeout = BQ_CONFIG.get("timeout", 60)
+            # Convert timeout from seconds to milliseconds
+            timeout_seconds = BQ_CONFIG.get("timeout", 60)
+            job_config.job_timeout_ms = timeout_seconds * 1000
             
             # Execute query
             logger.info("Executing BigQuery...")
@@ -112,6 +114,19 @@ class BigQueryDataLoader:
                 if df_pandas.empty:
                     return pl.DataFrame()
                 df = pl.from_pandas(df_pandas)
+                
+                # Handle None/NaN values by filling with appropriate defaults
+                numeric_cols = df.select(pl.col(pl.Float64, pl.Int64, pl.Int32, pl.Float32)).columns
+                for col in numeric_cols:
+                    if col in df.columns:
+                        df = df.with_columns(pl.col(col).fill_null(0))
+                
+                # Handle string columns with None values
+                string_cols = df.select(pl.col(pl.Utf8)).columns
+                for col in string_cols:
+                    if col in df.columns:
+                        df = df.with_columns(pl.col(col).fill_null(""))
+                        
             else:
                 df = results.to_dataframe()
             
@@ -155,19 +170,19 @@ class BigQueryDataLoader:
             logger.error(f"Failed to get schema for {table_name}: {str(e)}")
             return None
     
-    def get_executive_metrics(self) -> Optional[pl.DataFrame]:
+    def get_executive_metrics(self, start_date: str = "2017-01-01", end_date: str = "2018-09-30") -> Optional[pl.DataFrame]:
         """Get key executive metrics."""
-        query = get_query("executive", "key_metrics")
+        query = get_query("executive", "key_metrics", start_date=start_date, end_date=end_date)
         return self.execute_query(query)
     
-    def get_daily_trends(self, days: int = 90) -> Optional[pl.DataFrame]:
+    def get_daily_trends(self, start_date: str = "2017-01-01", end_date: str = "2018-09-30", days: int = 90) -> Optional[pl.DataFrame]:
         """Get daily trends for the specified number of days."""
-        query = get_query("executive", "daily_trends")
+        query = get_query("executive", "daily_trends", start_date=start_date, end_date=end_date)
         return self.execute_query(query)
     
-    def get_geographic_performance(self) -> Optional[pl.DataFrame]:
+    def get_geographic_performance(self, start_date: str = "2017-01-01", end_date: str = "2018-09-30") -> Optional[pl.DataFrame]:
         """Get geographic performance metrics."""
-        query = get_query("executive", "geographic_performance")
+        query = get_query("executive", "geographic_performance", start_date=start_date, end_date=end_date)
         return self.execute_query(query)
     
     def get_delivery_metrics(self, start_date: str, end_date: str) -> Optional[pl.DataFrame]:

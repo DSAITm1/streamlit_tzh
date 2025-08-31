@@ -10,18 +10,19 @@ EXECUTIVE_QUERIES: Dict[str, str] = {
     "key_metrics": """
         SELECT 
             -- On-time delivery rate
-            ROUND(
+            COALESCE(ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) 
+                         <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
-            ) as on_time_delivery_rate,
+            ), 0.0) as on_time_delivery_rate,
             
-            -- Average rating
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            -- Average rating (using fact table review_score)
+            COALESCE(ROUND(AVG(SAFE_CAST(f.review_score AS FLOAT64)), 2), 0.0) as avg_rating,
             
             -- Total revenue
-            ROUND(SUM(f.price + f.freight_value), 2) as total_revenue,
+            COALESCE(ROUND(SUM(f.price + f.freight_value), 2), 0.0) as total_revenue,
             
             -- Active customers
             COUNT(DISTINCT f.customer_sk) as active_customers,
@@ -31,28 +32,29 @@ EXECUTIVE_QUERIES: Dict[str, str] = {
             
         FROM {fact_order_items} f
         LEFT JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
-        WHERE o.order_purchase_timestamp >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+        WHERE o.order_purchase_timestamp >= '{start_date}'
+        AND o.order_purchase_timestamp <= '{end_date}'
     """,
     
     "daily_trends": """
         SELECT 
             d.date_value,
             COUNT(DISTINCT f.order_id) as daily_orders,
-            ROUND(SUM(f.price + f.freight_value), 2) as daily_revenue,
-            ROUND(AVG(r.review_score), 2) as daily_avg_rating,
-            ROUND(
+            COALESCE(ROUND(SUM(f.price + f.freight_value), 2), 0.0) as daily_revenue,
+            COALESCE(ROUND(AVG(SAFE_CAST(f.review_score AS FLOAT64)), 2), 0.0) as daily_avg_rating,
+            COALESCE(ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) 
+                         <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
-            ) as daily_on_time_rate
+            ), 0.0) as daily_on_time_rate
             
         FROM {fact_order_items} f
         LEFT JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         LEFT JOIN {dim_date} d ON f.order_date_sk = d.date_sk
-        WHERE d.date_value >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+        WHERE d.date_value >= '{start_date}'
+        AND d.date_value <= '{end_date}'
         GROUP BY d.date_value
         ORDER BY d.date_value
     """,
@@ -61,10 +63,11 @@ EXECUTIVE_QUERIES: Dict[str, str] = {
         SELECT 
             c.customer_state,
             COUNT(DISTINCT f.order_id) as order_count,
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) 
+                         <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate,
@@ -73,8 +76,9 @@ EXECUTIVE_QUERIES: Dict[str, str] = {
         FROM {fact_order_items} f
         LEFT JOIN {dim_customer} c ON f.customer_sk = c.customer_sk
         LEFT JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
-        WHERE o.order_purchase_timestamp >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+        WHERE o.order_purchase_timestamp >= '{start_date}'
+        AND o.order_purchase_timestamp <= '{end_date}'
+        AND f.review_score IS NOT NULL
         GROUP BY c.customer_state
         ORDER BY order_count DESC
     """
@@ -86,25 +90,25 @@ DELIVERY_QUERIES: Dict[str, str] = {
         SELECT 
             COUNT(*) as total_orders,
             SUM(CASE 
-                WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                 THEN 1 ELSE 0 
             END) as on_time_orders,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 2
             ) as on_time_percentage,
             ROUND(
                 AVG(DATE_DIFF(
-                    o.order_delivered_customer_date, 
+                    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), 
                     o.order_purchase_timestamp, 
                     DAY
                 )), 1
             ) as avg_delivery_days,
             ROUND(
                 AVG(DATE_DIFF(
-                    o.order_delivered_customer_date, 
+                    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), 
                     o.order_estimated_delivery_date, 
                     DAY
                 )), 1
@@ -124,13 +128,13 @@ DELIVERY_QUERIES: Dict[str, str] = {
             COUNT(*) as order_count,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate,
             ROUND(
                 AVG(DATE_DIFF(
-                    o.order_delivered_customer_date, 
+                    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), 
                     o.order_purchase_timestamp, 
                     DAY
                 )), 1
@@ -140,7 +144,7 @@ DELIVERY_QUERIES: Dict[str, str] = {
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
         JOIN {dim_customer} c ON f.customer_sk = c.customer_sk
         JOIN {dim_seller} s ON f.seller_sk = s.seller_sk
-        WHERE o.order_delivered_customer_date IS NOT NULL
+        WHERE SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY c.customer_state, s.seller_state
@@ -151,13 +155,13 @@ DELIVERY_QUERIES: Dict[str, str] = {
     "delivery_time_distribution": """
         SELECT 
             CASE 
-                WHEN DATE_DIFF(o.order_delivered_customer_date, o.order_purchase_timestamp, DAY) <= 7 
+                WHEN DATE_DIFF(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), o.order_purchase_timestamp, DAY) <= 7 
                 THEN '1-7 days'
-                WHEN DATE_DIFF(o.order_delivered_customer_date, o.order_purchase_timestamp, DAY) <= 14 
+                WHEN DATE_DIFF(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), o.order_purchase_timestamp, DAY) <= 14 
                 THEN '8-14 days'
-                WHEN DATE_DIFF(o.order_delivered_customer_date, o.order_purchase_timestamp, DAY) <= 21 
+                WHEN DATE_DIFF(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), o.order_purchase_timestamp, DAY) <= 21 
                 THEN '15-21 days'
-                WHEN DATE_DIFF(o.order_delivered_customer_date, o.order_purchase_timestamp, DAY) <= 30 
+                WHEN DATE_DIFF(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), o.order_purchase_timestamp, DAY) <= 30 
                 THEN '22-30 days'
                 ELSE '30+ days'
             END as delivery_time_bucket,
@@ -166,7 +170,7 @@ DELIVERY_QUERIES: Dict[str, str] = {
             
         FROM {fact_order_items} f
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        WHERE o.order_delivered_customer_date IS NOT NULL
+        WHERE SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY delivery_time_bucket
@@ -185,65 +189,62 @@ DELIVERY_QUERIES: Dict[str, str] = {
 SATISFACTION_QUERIES: Dict[str, str] = {
     "rating_analysis": """
         SELECT 
-            r.review_score,
+            f.review_score,
             COUNT(*) as review_count,
             ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) as percentage,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate
             
         FROM {fact_order_items} f
-        JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        WHERE r.review_score IS NOT NULL
+        WHERE f.review_score IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
-        GROUP BY r.review_score
-        ORDER BY r.review_score
+    GROUP BY f.review_score
+    ORDER BY review_score
     """,
     
     "satisfaction_vs_delivery": """
         SELECT 
             CASE 
-                WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date 
                 THEN 'On Time'
                 ELSE 'Delayed'
             END as delivery_status,
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating,
             COUNT(*) as review_count,
-            COUNTIF(r.review_score >= 4) as positive_reviews,
-            COUNTIF(r.review_score <= 2) as negative_reviews
+            COUNTIF(f.review_score >= 4) as positive_reviews,
+            COUNTIF(f.review_score <= 2) as negative_reviews
             
         FROM {fact_order_items} f
-        JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        WHERE r.review_score IS NOT NULL
+        WHERE f.review_score IS NOT NULL
         AND o.order_delivered_customer_date IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
-        GROUP BY delivery_status
+    GROUP BY delivery_status
     """,
     
     "category_satisfaction": """
         SELECT 
             p.product_category_name_english as category,
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating,
             COUNT(*) as review_count,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate
             
         FROM {fact_order_items} f
-        JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
         JOIN {dim_product} p ON f.product_sk = p.product_sk
-        WHERE r.review_score IS NOT NULL
+        WHERE f.review_score IS NOT NULL
         AND p.product_category_name_english IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
@@ -265,11 +266,11 @@ PRODUCT_QUERIES: Dict[str, str] = {
                 ELSE '5kg+'
             END as weight_category,
             COUNT(*) as order_count,
-            ROUND(AVG(DATE_DIFF(o.order_delivered_customer_date, o.order_purchase_timestamp, DAY)), 1) as avg_delivery_days,
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            ROUND(AVG(DATE_DIFF(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')), o.order_purchase_timestamp, DAY)), 1) as avg_delivery_days,
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate
@@ -277,9 +278,9 @@ PRODUCT_QUERIES: Dict[str, str] = {
         FROM {fact_order_items} f
         JOIN {dim_product} p ON f.product_sk = p.product_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         WHERE p.product_weight_g IS NOT NULL
-        AND o.order_delivered_customer_date IS NOT NULL
+        AND SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) IS NOT NULL
+        AND f.review_score IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY weight_category
@@ -300,10 +301,10 @@ PRODUCT_QUERIES: Dict[str, str] = {
             ROUND(SUM(f.price), 2) as total_revenue,
             ROUND(AVG(f.price), 2) as avg_price,
             ROUND(AVG(p.product_weight_g), 1) as avg_weight,
-            ROUND(AVG(r.review_score), 2) as avg_rating,
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating,
             ROUND(
                 AVG(CASE 
-                    WHEN o.order_delivered_customer_date <= o.order_estimated_delivery_date 
+                    WHEN SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', NULLIF(TRIM(o.order_delivered_customer_date), '')) <= o.order_estimated_delivery_date
                     THEN 1.0 ELSE 0.0 
                 END) * 100, 1
             ) as on_time_rate
@@ -311,8 +312,8 @@ PRODUCT_QUERIES: Dict[str, str] = {
         FROM {fact_order_items} f
         JOIN {dim_product} p ON f.product_sk = p.product_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         WHERE p.product_category_name_english IS NOT NULL
+        AND f.review_score IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY p.product_category_name_english
@@ -330,13 +331,13 @@ PAYMENT_QUERIES: Dict[str, str] = {
             ROUND(SUM(f.price + f.freight_value), 2) as total_value,
             ROUND(AVG(f.price + f.freight_value), 2) as avg_order_value,
             ROUND(AVG(pm.payment_installments), 1) as avg_installments,
-            ROUND(AVG(r.review_score), 2) as avg_rating
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating
             
         FROM {fact_order_items} f
         JOIN {dim_payment} pm ON f.payment_sk = pm.payment_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
         WHERE pm.payment_type IS NOT NULL
+        AND f.review_score IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY pm.payment_type
@@ -348,14 +349,14 @@ PAYMENT_QUERIES: Dict[str, str] = {
             pm.payment_installments,
             COUNT(*) as order_count,
             ROUND(AVG(f.price + f.freight_value), 2) as avg_order_value,
-            ROUND(AVG(r.review_score), 2) as avg_rating
+            ROUND(AVG(CAST(f.review_score AS FLOAT64)), 2) as avg_rating
             
         FROM {fact_order_items} f
         JOIN {dim_payment} pm ON f.payment_sk = pm.payment_sk
-        LEFT JOIN {dim_order_reviews} r ON f.order_sk = r.order_sk
         JOIN {dim_orders} o ON f.order_sk = o.order_sk
         WHERE pm.payment_installments IS NOT NULL
         AND pm.payment_installments <= 24
+        AND f.review_score IS NOT NULL
         AND o.order_purchase_timestamp >= '{start_date}'
         AND o.order_purchase_timestamp <= '{end_date}'
         GROUP BY pm.payment_installments

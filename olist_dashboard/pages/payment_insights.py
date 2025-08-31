@@ -65,28 +65,28 @@ def render_payment_insights_page(filters: Dict[str, Any]) -> None:
         render_advanced_analytics_tab(payment_methods, installment_analysis, revenue_optimization, filters)
 
 @cache_details()
-def load_payment_methods_data(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_payment_methods_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load payment methods analysis data."""
     try:
-        return data_loader.get_payment_methods_analysis(start_date, end_date)
+        return _data_loader.get_payment_methods_analysis(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading payment methods data: {str(e)}")
         return None
 
 @cache_details()
-def load_installment_analysis_data(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_installment_analysis_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load installment analysis data."""
     try:
-        return data_loader.get_installment_analysis(start_date, end_date)
+        return _data_loader.get_installment_analysis(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading installment analysis data: {str(e)}")
         return None
 
 @cache_details()
-def load_revenue_optimization_data(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_revenue_optimization_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load revenue optimization data."""
     try:
-        return data_loader.get_revenue_optimization(start_date, end_date)
+        return _data_loader.get_revenue_optimization(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading revenue optimization data: {str(e)}")
         return None

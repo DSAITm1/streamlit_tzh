@@ -65,28 +65,28 @@ def render_delivery_performance_page(filters: Dict[str, Any]) -> None:
         render_detailed_data_tab(delivery_by_state, filters)
 
 @cache_details()
-def load_delivery_metrics(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_delivery_metrics(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load delivery performance metrics."""
     try:
-        return data_loader.get_delivery_metrics(start_date, end_date)
+        return _data_loader.get_delivery_metrics(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading delivery metrics: {str(e)}")
         return None
 
 @cache_details()
-def load_delivery_by_state(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_delivery_by_state(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load delivery performance by state."""
     try:
-        return data_loader.get_delivery_by_state(start_date, end_date)
+        return _data_loader.get_delivery_by_state(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading state delivery data: {str(e)}")
         return None
 
 @cache_details()
-def load_delivery_distribution(data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+def load_delivery_distribution(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load delivery time distribution."""
     try:
-        return data_loader.get_delivery_time_distribution(start_date, end_date)
+        return _data_loader.get_delivery_time_distribution(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading delivery distribution: {str(e)}")
         return None
