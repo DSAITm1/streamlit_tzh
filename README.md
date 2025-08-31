@@ -320,4 +320,4 @@ This project is licensed under the MIT License - see LICENSE file for details.
 
 ---
 
-**Built with ❤️ using Streamlit, Polars, and Google BigQuery**
+**Built with ❤️ using Streamlit, Polars, and Google BigQuery** t
