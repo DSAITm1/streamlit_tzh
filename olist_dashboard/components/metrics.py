@@ -228,7 +228,7 @@ def render_sparkline_metric(data: pl.DataFrame, date_col: str, metric_col: str,
         # Display metric with chart
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig, width='stretch', config={'displayModeBar': False})
         
         with col2:
             st.metric(

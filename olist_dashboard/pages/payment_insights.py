@@ -98,17 +98,17 @@ def render_payment_overview_kpis(payment_methods: pl.DataFrame, installment_anal
         return
     
     # Calculate aggregate payment metrics
-    total_transactions = payment_methods.select(pl.sum("transaction_count")).item()
+    total_transactions = payment_methods.select(pl.sum("order_count")).item()
     total_value = payment_methods.select(pl.sum("total_value")).item()
     avg_value = total_value / total_transactions if total_transactions > 0 else 0
     
     # Payment method distribution
-    top_method = payment_methods.sort("transaction_count", descending=True).row(0, named=True)
-    method_share = (top_method["transaction_count"] / total_transactions) * 100 if total_transactions > 0 else 0
+    top_method = payment_methods.sort("order_count", descending=True).row(0, named=True)
+    method_share = (top_method["order_count"] / total_transactions) * 100 if total_transactions > 0 else 0
     
     # Installment insights
     if installment_analysis is not None and not installment_analysis.is_empty():
-        installment_usage = installment_analysis.filter(pl.col("installments") > 1)
+        installment_usage = installment_analysis.filter(pl.col("payment_installments") > 1)
         if not installment_usage.is_empty():
             installment_rate = (installment_usage.select(pl.sum("order_count")).item() / 
                               installment_analysis.select(pl.sum("order_count")).item()) * 100
@@ -169,8 +169,8 @@ def render_payment_methods_tab(payment_methods: pl.DataFrame) -> None:
         
         # Add calculated metrics
         enhanced_methods = payment_methods.with_columns([
-            (pl.col("total_value") / pl.col("transaction_count")).alias("avg_transaction_value"),
-            (pl.col("transaction_count") / payment_methods.select(pl.sum("transaction_count")).item() * 100).alias("volume_share_pct"),
+            (pl.col("total_value") / pl.col("order_count")).alias("avg_transaction_value"),
+            (pl.col("order_count") / payment_methods.select(pl.sum("order_count")).item() * 100).alias("volume_share_pct"),
             (pl.col("total_value") / payment_methods.select(pl.sum("total_value")).item() * 100).alias("value_share_pct")
         ])
         
@@ -250,8 +250,8 @@ def render_installment_analysis_tab(installment_analysis: pl.DataFrame) -> None:
         
         if not installment_analysis.is_empty():
             # Calculate installment patterns
-            single_payment = installment_analysis.filter(pl.col("installments") == 1)
-            multi_installment = installment_analysis.filter(pl.col("installments") > 1)
+            single_payment = installment_analysis.filter(pl.col("payment_installments") == 1)
+            multi_installment = installment_analysis.filter(pl.col("payment_installments") > 1)
             
             if not single_payment.is_empty() and not multi_installment.is_empty():
                 single_avg = single_payment.select(
@@ -389,8 +389,8 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
             # Credit card dominance analysis
             credit_share = payment_methods.filter(pl.col("payment_type") == "credit_card")
             if not credit_share.is_empty():
-                cc_volume_share = (credit_share.select("transaction_count").item() / 
-                                 payment_methods.select(pl.sum("transaction_count")).item()) * 100
+                cc_volume_share = (credit_share.select("order_count").item() / 
+                                 payment_methods.select(pl.sum("order_count")).item()) * 100
                 
                 if cc_volume_share > 70:
                     st.success(f"💳 Credit cards dominate: {cc_volume_share:.1f}% of transactions")
@@ -403,14 +403,14 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
         if installment_analysis is not None and not installment_analysis.is_empty():
             st.markdown("**Installment Preferences:**")
             
-            max_installments = installment_analysis.select(pl.max("installments")).item()
+            max_installments = installment_analysis.select(pl.max("payment_installments")).item()
             popular_installments = installment_analysis.sort("order_count", descending=True).head(3)
             
             st.markdown(f"📈 Max installments offered: {max_installments}")
             st.markdown("🏆 Most popular installment options:")
             
             for row in popular_installments.iter_rows(named=True):
-                installments = row["installments"]
+                installments = row["payment_installments"]
                 orders = row["order_count"]
                 st.markdown(f"   • {installments}x: {orders:,} orders")
     

@@ -71,7 +71,7 @@ def render_delivery_trend_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering delivery trend chart: {str(e)}")
@@ -109,7 +109,7 @@ def render_geographic_performance_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering geographic chart: {str(e)}")
@@ -134,7 +134,7 @@ def render_delivery_distribution_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering distribution chart: {str(e)}")
@@ -188,7 +188,7 @@ def render_rating_distribution_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering rating distribution: {str(e)}")
@@ -222,7 +222,7 @@ def render_satisfaction_delivery_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering satisfaction vs delivery chart: {str(e)}")
@@ -292,7 +292,7 @@ def render_weight_impact_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering weight impact chart: {str(e)}")
@@ -327,7 +327,7 @@ def render_category_revenue_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering category revenue chart: {str(e)}")
@@ -360,7 +360,7 @@ def render_category_performance_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering category performance chart: {str(e)}")
@@ -408,7 +408,7 @@ def render_payment_methods_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering payment methods chart: {str(e)}")
@@ -439,7 +439,7 @@ def render_installment_chart(df) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering installment chart: {str(e)}")
@@ -479,7 +479,7 @@ def render_correlation_heatmap(correlation_data: Dict[str, float]) -> None:
             **CHART_THEMES["plotly"]["layout"]
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering correlation heatmap: {str(e)}")
@@ -522,7 +522,7 @@ def render_time_series_chart(data: pl.DataFrame, date_col: str, value_col: str,
             height=UI_CONFIG["chart_height"]
         ).interactive()
         
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, width='stretch')
         
     except Exception as e:
         st.error(f"Error rendering time series chart: {str(e)}")

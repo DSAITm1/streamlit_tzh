@@ -157,7 +157,7 @@ def render_delivery_kpis(delivery_metrics: pl.DataFrame) -> None:
             max_val=100,
             target=90
         )
-        st.plotly_chart(gauge_fig, use_container_width=True)
+        st.plotly_chart(gauge_fig, width='stretch')
 
 def render_performance_trends_tab(delivery_metrics: pl.DataFrame, 
                                  delivery_distribution: pl.DataFrame) -> None:

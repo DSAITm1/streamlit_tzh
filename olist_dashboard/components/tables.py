@@ -47,7 +47,7 @@ def render_data_table(data: pl.DataFrame, title: str = None,
     st.dataframe(
         df_display,
         height=UI_CONFIG.get("table_height", 400),
-        use_container_width=True
+        width='stretch'
     )
     
     # Add download button if requested
@@ -233,7 +233,7 @@ def render_pivot_table(data: pl.DataFrame, index_col: str, columns_col: str,
         st.dataframe(
             pivot_df,
             height=UI_CONFIG.get("table_height", 400),
-            use_container_width=True
+            width='stretch'
         )
         
         # Add download button
@@ -479,7 +479,7 @@ def render_performance_metrics_table(data: pl.DataFrame) -> None:
         st.dataframe(
             df,
             height=UI_CONFIG.get("table_height", 400),
-            use_container_width=True
+            width='stretch'
         )
         
     except Exception as e:
