@@ -284,6 +284,16 @@ class BigQueryDataLoader:
             end_date=end_date
         )
         return self.execute_query(query)
+    
+    def get_revenue_optimization(self, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
+        """Get revenue optimization analysis by payment method and installments."""
+        query = get_query(
+            "payment", 
+            "revenue_optimization", 
+            start_date=start_date, 
+            end_date=end_date
+        )
+        return self.execute_query(query)
 
 # Global data loader instance
 @st.cache_resource

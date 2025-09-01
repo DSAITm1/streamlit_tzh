@@ -250,17 +250,20 @@ def render_geographic_analysis_tab(delivery_by_state: pl.DataFrame) -> None:
     significant_states = delivery_by_state.filter(pl.col("order_count") >= 50)
     
     if not significant_states.is_empty():
-        # Add performance categories
-        significant_states = significant_states.with_columns([
-            pl.when(pl.col("on_time_rate") >= 90)
-            .then("🟢 Excellent")
-            .when(pl.col("on_time_rate") >= 80)
-            .then("🟡 Good")
-            .when(pl.col("on_time_rate") >= 70)
-            .then("🟠 Fair")
-            .otherwise("🔴 Poor")
-            .alias("Performance Category")
-        ])
+        # Add performance categories using map_elements
+        def categorize_performance(rate):
+            if rate >= 90:
+                return "🟢 Excellent"
+            elif rate >= 80:
+                return "🟡 Good"
+            elif rate >= 70:
+                return "🟠 Fair"
+            else:
+                return "🔴 Poor"
+        
+        significant_states = significant_states.with_columns(
+            pl.col("on_time_rate").map_elements(categorize_performance, return_dtype=pl.String).alias("Performance Category")
+        )
         
         render_data_table(
             significant_states,

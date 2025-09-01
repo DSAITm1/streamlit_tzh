@@ -240,19 +240,29 @@ def render_product_analysis_charts(product_data: pl.DataFrame) -> None:
     
     df = product_data.to_pandas()
     
-    # Weight impact chart
-    st.subheader("📦 Product Weight Impact on Delivery")
-    render_weight_impact_chart(df)
+    # Check what type of data we have and render appropriate charts
+    has_weight_data = 'weight_category' in df.columns and 'avg_delivery_days' in df.columns
+    has_category_data = 'category' in df.columns and 'total_revenue' in df.columns
     
-    col1, col2 = st.columns(2)
+    if has_weight_data:
+        # Weight impact chart
+        st.subheader("📦 Product Weight Impact on Delivery")
+        render_weight_impact_chart(df)
     
-    with col1:
-        st.subheader("🏆 Top Categories by Revenue")
-        render_category_revenue_chart(df)
+    if has_category_data:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🏆 Top Categories by Revenue")
+            render_category_revenue_chart(df)
+        
+        with col2:
+            st.subheader("⭐ Category Performance")
+            render_category_performance_chart(df)
     
-    with col2:
-        st.subheader("⭐ Category Performance")
-        render_category_performance_chart(df)
+    # If neither type of data is available, show a message
+    if not has_weight_data and not has_category_data:
+        st.info("Chart data not available for the selected analysis type")
 
 def render_weight_impact_chart(df) -> None:
     """Render product weight impact chart."""

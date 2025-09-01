@@ -39,7 +39,7 @@ Develop a comprehensive Streamlit dashboard application to visualize and analyze
 
 - **Frontend**: Streamlit 1.28+
 - **Backend**: Python 3.12+
-- **Database**: Google BigQuery (existing dbt_olist_stg dataset)
+- **Database**: Google BigQuery (existing dbt_olist_dwh dataset)
 - **Data Processing**: Polars, NumPy
 - **Visualization**: Plotly, Altair, Streamlit native charts
 - **Authentication**: Streamlit built-in authentication
@@ -173,7 +173,7 @@ olist_dashboard/
 
 ### Data Sources
 
-- **Primary**: BigQuery dataset `dsai-468212.dbt_olist_stg`
+- **Primary**: BigQuery dataset `project-olist-470307.dbt_olist_dwh`
 - **Tables Used**:
   - `fact_order_items` (primary fact table)
   - `dim_customer`, `dim_orders`, `dim_product`
@@ -403,8 +403,8 @@ CMD ["streamlit", "run", "main.py", "--server.port=8501"]
 ```bash
 # BigQuery Configuration
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
-BQ_PROJECT_ID=dsai-468212
-BQ_DATASET=dbt_olist_stg
+BQ_PROJECT_ID=project-olist-470307
+BQ_DATASET=dbt_olist_dwh
 
 # Application Configuration
 STREAMLIT_ENV=production

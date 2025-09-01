@@ -310,17 +310,20 @@ def render_category_analysis_tab(category_satisfaction: pl.DataFrame) -> None:
     # Detailed category analysis
     st.markdown("### 📊 Detailed Category Performance")
     
-    # Add performance indicators
-    enhanced_categories = category_satisfaction.with_columns([
-        pl.when(pl.col("avg_rating") >= 4.5)
-        .then("🟢 Excellent")
-        .when(pl.col("avg_rating") >= 4.0)
-        .then("🟡 Good")
-        .when(pl.col("avg_rating") >= 3.5)
-        .then("🟠 Fair")
-        .otherwise("🔴 Poor")
-        .alias("Satisfaction Level")
-    ])
+    # Add performance indicators using map_elements
+    def categorize_satisfaction(rating):
+        if rating >= 4.5:
+            return "🟢 Excellent"
+        elif rating >= 4.0:
+            return "🟡 Good"
+        elif rating >= 3.5:
+            return "🟠 Fair"
+        else:
+            return "🔴 Poor"
+    
+    enhanced_categories = category_satisfaction.with_columns(
+        pl.col("avg_rating").map_elements(categorize_satisfaction, return_dtype=pl.String).alias("Satisfaction Level")
+    )
     
     render_data_table(enhanced_categories, title="Category Satisfaction Analysis", max_rows=15)
     

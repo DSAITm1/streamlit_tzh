@@ -135,7 +135,7 @@ GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
 GOOGLE_CLOUD_PROJECT="your-project-id"
 
 # BigQuery
-BQ_DATASET_ID="dsai-468212.dbt_olist_stg"
+BQ_DATASET_ID="project-olist-470307.dbt_olist_dwh"
 BQ_LOCATION="US"
 
 # Application

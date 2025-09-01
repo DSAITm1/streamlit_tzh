@@ -241,7 +241,7 @@ def show_app_info():
                 
                 **Data Source**: 
                 - Google BigQuery
-                - Dataset: `{APP_CONFIG.get('dataset_id', 'dsai-468212.dbt_olist_stg')}`
+                - Dataset: `{APP_CONFIG.get('dataset_id', 'project-olist-470307.dbt_olist_dwh')}`
                 
                 **Technologies**:
                 - 🐍 Python 3.12+

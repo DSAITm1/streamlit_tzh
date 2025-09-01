@@ -152,6 +152,27 @@ def render_trend_metrics(trend_data: pl.DataFrame, date_col: str = "date_value")
                     config["color"]
                 )
 
+def hex_to_rgba(hex_color: str, alpha: float = 0.1) -> str:
+    """
+    Convert hex color to rgba format.
+    
+    Args:
+        hex_color: Hex color string (e.g., "#1f77b4")
+        alpha: Alpha transparency value (0-1)
+        
+    Returns:
+        RGBA color string (e.g., "rgba(31, 119, 180, 0.1)")
+    """
+    # Remove # if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Convert hex to RGB
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
 def render_sparkline_metric(data: pl.DataFrame, date_col: str, metric_col: str, 
                           title: str, color: str) -> None:
     """
@@ -162,7 +183,7 @@ def render_sparkline_metric(data: pl.DataFrame, date_col: str, metric_col: str,
         date_col: Date column name
         metric_col: Metric column name
         title: Display title
-        color: Chart color
+        color: Chart color (hex format)
     """
     try:
         # Convert to pandas for plotly
@@ -176,7 +197,7 @@ def render_sparkline_metric(data: pl.DataFrame, date_col: str, metric_col: str,
             mode='lines',
             line=dict(color=color, width=2),
             fill='tonexty',
-            fillcolor=f'rgba({color[1:]}, 0.1)',  # Add transparency
+            fillcolor=hex_to_rgba(color, 0.1),  # Convert hex to rgba properly
             showlegend=False,
             hovertemplate=f'{title}: %{{y}}<br>Date: %{{x}}<extra></extra>'
         ))

@@ -7,7 +7,7 @@ echo ========================================
 
 REM Get the current directory (where the script is located)
 set SCRIPT_DIR=%~dp0
-set CREDENTIALS_FILE=%SCRIPT_DIR%dsai-468212-f4762cc666a5.json
+set CREDENTIALS_FILE=%SCRIPT_DIR%project-olist-470307-credentials.json
 
 echo.
 echo Current directory: %SCRIPT_DIR%
@@ -16,7 +16,7 @@ echo Credentials file: %CREDENTIALS_FILE%
 REM Check if credentials file exists
 if not exist "%CREDENTIALS_FILE%" (
     echo ERROR: Credentials file not found!
-    echo Please ensure dsai-468212-f4762cc666a5.json is in the project directory.
+    echo Please ensure project-olist-470307-credentials.json is in the project directory.
     pause
     exit /b 1
 )

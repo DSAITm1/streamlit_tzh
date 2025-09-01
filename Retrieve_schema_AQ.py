@@ -2,11 +2,11 @@
 """
 Retrieve and save BigQuery table schemas to Markdown.
 
-Defaults (tailored for Olist dbt staging):
-- project: dsai-468212
-- dataset: dbt_olist_stg
+Defaults (tailored for Olist dbt data warehouse):
+- project: project-olist-470307
+- dataset: dbt_olist_dwh
 - tables (by default): only fact_/dim_ tables in the dataset
-- out: artifacts/bq_schemas_dbt_olist_stg_dim_fact.md
+- out: artifacts/bq_schemas_dbt_olist_dwh_dim_fact.md
 
 Quick usage:
     # Use defaults (project/dataset and dim/fact tables listed below)
@@ -30,8 +30,8 @@ from datetime import datetime
 from google.cloud import bigquery
 
 
-DEFAULT_PROJECT = "dsai-468212"
-DEFAULT_DATASET = "dbt_olist_stg"
+DEFAULT_PROJECT = "project-olist-470307"
+DEFAULT_DATASET = "dbt_olist_dwh"
 # Default to only dim_*/fact_* tables provided in the dataset
 DEFAULT_TABLES = [
     "dim_customer",
@@ -149,7 +149,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--out",
-        default=str(Path("artifacts") / "bq_schemas_dbt_olist_stg_dim_fact.md"),
+        default=str(Path("artifacts") / "bq_schemas_dbt_olist_dwh_dim_fact.md"),
         help="Path to output Markdown file",
     )
     args = parser.parse_args()

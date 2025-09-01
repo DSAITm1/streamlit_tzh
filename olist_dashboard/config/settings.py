@@ -30,7 +30,15 @@ def get_bigquery_credentials():
     except Exception:
         pass
     
-    # Try relative path
+    # Try relative path - new project credentials first
+    try:
+        credentials_path = os.path.join(os.getcwd(), "project-olist-470307-credentials.json")
+        if os.path.exists(credentials_path):
+            return service_account.Credentials.from_service_account_file(credentials_path)
+    except Exception:
+        pass
+    
+    # Try old project credentials as fallback
     try:
         credentials_path = os.path.join(os.getcwd(), "dsai-468212-f4762cc666a5.json")
         if os.path.exists(credentials_path):
@@ -57,12 +65,12 @@ def get_project_id():
         return project_id
     
     # Default fallback
-    return "dsai-468212"
+    return "project-olist-470307"
 
 # BigQuery Configuration
 BQ_CONFIG: Dict[str, Any] = {
     "project_id": get_project_id(),
-    "dataset": "dbt_olist_stg",
+    "dataset": "dbt_olist_dwh",
     "location": "asia-southeast1",  # Changed from US to asia-southeast1
     "timeout": 60,  # Query timeout in seconds
     "credentials": get_bigquery_credentials(),

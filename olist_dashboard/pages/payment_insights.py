@@ -68,7 +68,7 @@ def render_payment_insights_page(filters: Dict[str, Any]) -> None:
 def load_payment_methods_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
     """Load payment methods analysis data."""
     try:
-        return _data_loader.get_payment_methods_analysis(start_date, end_date)
+        return _data_loader.get_payment_method_analysis(start_date, end_date)
     except Exception as e:
         st.error(f"Error loading payment methods data: {str(e)}")
         return None

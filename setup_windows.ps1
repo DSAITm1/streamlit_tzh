@@ -6,7 +6,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 
 # Get the current directory (where the script is located)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$CredentialsFile = Join-Path $ScriptDir "dsai-468212-f4762cc666a5.json"
+$CredentialsFile = Join-Path $ScriptDir "project-olist-470307-credentials.json"
 
 Write-Host ""
 Write-Host "Current directory: $ScriptDir" -ForegroundColor Yellow
@@ -15,7 +15,7 @@ Write-Host "Credentials file: $CredentialsFile" -ForegroundColor Yellow
 # Check if credentials file exists
 if (-not (Test-Path $CredentialsFile)) {
     Write-Host "ERROR: Credentials file not found!" -ForegroundColor Red
-    Write-Host "Please ensure dsai-468212-f4762cc666a5.json is in the project directory." -ForegroundColor Red
+    Write-Host "Please ensure project-olist-470307-credentials.json is in the project directory." -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -89,7 +89,7 @@ Write-Host "3. Run the Streamlit app: streamlit run main.py" -ForegroundColor Gr
 Write-Host ""
 Write-Host "Alternative authentication methods:" -ForegroundColor White
 Write-Host "- The app will also try to use .streamlit/secrets.toml (already configured)" -ForegroundColor Gray
-Write-Host "- Or the relative path to dsai-468212-f4762cc666a5.json" -ForegroundColor Gray
+Write-Host "- Or the relative path to project-olist-470307-credentials.json" -ForegroundColor Gray
 Write-Host ""
 
 Read-Host "Press Enter to exit"
