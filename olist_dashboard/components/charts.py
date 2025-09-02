@@ -522,12 +522,12 @@ def render_time_series_chart(data: pl.DataFrame, date_col: str, value_col: str,
             height=UI_CONFIG["chart_height"]
         ).interactive()
         
-        st.altair_chart(chart, width='stretch')
+        st.altair_chart(chart, use_container_width=True)
         
     except Exception as e:
         st.error(f"Error rendering time series chart: {str(e)}")
 
-def create_download_button(fig: go.Figure, filename: str, format: str = 'png') -> None:
+def create_download_button(fig: go.Figure, filename: str, format: str = 'png', key_prefix: str = "") -> None:
     """
     Create download button for charts.
     
@@ -535,7 +535,16 @@ def create_download_button(fig: go.Figure, filename: str, format: str = 'png') -
         fig: Plotly figure
         filename: Download filename
         format: File format ('png', 'svg', 'pdf')
+        key_prefix: Unique prefix for button key to avoid conflicts
     """
+    # Initialize session state counter if not exists
+    if 'chart_download_button_counter' not in st.session_state:
+        st.session_state.chart_download_button_counter = 0
+    
+    # Get unique counter for this button
+    counter = st.session_state.chart_download_button_counter
+    st.session_state.chart_download_button_counter += 1
+    
     try:
         if format == 'png':
             img_bytes = fig.to_image(format='png', width=1200, height=800)
@@ -543,7 +552,8 @@ def create_download_button(fig: go.Figure, filename: str, format: str = 'png') -
                 label=f"📥 Download {format.upper()}",
                 data=img_bytes,
                 file_name=f"{filename}.{format}",
-                mime=f"image/{format}"
+                mime=f"image/{format}",
+                key=f"{key_prefix}_chart_{counter}"
             )
         else:
             st.info(f"{format.upper()} download not yet implemented")

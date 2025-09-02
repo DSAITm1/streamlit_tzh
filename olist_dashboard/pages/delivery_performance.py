@@ -353,7 +353,8 @@ def render_detailed_data_tab(delivery_by_state: pl.DataFrame, filters: Dict[str,
                     "Download CSV",
                     csv_data,
                     "delivery_performance.csv",
-                    "text/csv"
+                    "text/csv",
+                    key="delivery_performance_download"
                 )
         
         with col2:

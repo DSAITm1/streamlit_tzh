@@ -52,7 +52,14 @@ def render_data_table(data: pl.DataFrame, title: str = None,
     
     # Add download button if requested
     if download:
-        create_download_buttons(data.to_pandas(), title or "data")
+        # Convert to pandas and check if data is not empty
+        df_pandas = data.to_pandas()
+        if not df_pandas.empty:
+            # Create unique key based on title, schema, and data shape
+            unique_id = f"{title or 'data'}_{hash(str(data.schema))}_{data.shape[0]}_{data.shape[1]}_{id(data) % 10000}"
+            create_download_buttons(df_pandas, title or "data", key_prefix=f"data_table_{unique_id}")
+        else:
+            st.info("📊 No data available for download")
 
 def render_summary_table(data: pl.DataFrame, group_cols: List[str], 
                         agg_cols: Dict[str, str], title: str = None) -> None:
@@ -237,7 +244,7 @@ def render_pivot_table(data: pl.DataFrame, index_col: str, columns_col: str,
         )
         
         # Add download button
-        create_download_buttons(pivot_df, title or "pivot_table")
+        create_download_buttons(pivot_df, title or "pivot_table", key_prefix=f"pivot_table_{hash(str(pivot_df.shape))}_{id(pivot_df) % 10000}")
         
     except Exception as e:
         st.error(f"Error creating pivot table: {str(e)}")
@@ -325,53 +332,81 @@ def format_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
         st.error(f"Error formatting columns: {str(e)}")
         return df
 
-def create_download_buttons(df: pd.DataFrame, filename: str) -> None:
+def create_download_buttons(df: pd.DataFrame, filename: str, key_prefix: str = "") -> None:
     """
     Create download buttons for different formats.
     
     Args:
         df: DataFrame to download
         filename: Base filename
+        key_prefix: Unique prefix for button keys to avoid conflicts
     """
+    # Initialize session state counter if not exists
+    if 'download_button_counter' not in st.session_state:
+        st.session_state.download_button_counter = 0
+    
+    # Get unique counter for this set of buttons
+    counter = st.session_state.download_button_counter
+    st.session_state.download_button_counter += 1
+    
     try:
         col1, col2, col3 = st.columns(3)
         
         with col1:
             # CSV download
             csv_data = df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv_data,
-                file_name=f"{filename}.csv",
-                mime="text/csv"
-            )
+            if csv_data and len(csv_data.strip()) > 0:
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv_data,
+                    file_name=f"{filename}.csv",
+                    mime="text/csv",
+                    key=f"{key_prefix}_csv_{counter}"
+                )
+            else:
+                st.info("📄 No CSV data available")
         
         with col2:
-            # Excel download (if xlsxwriter is available)
+            # Excel download
             try:
                 import io
                 excel_buffer = io.BytesIO()
-                df.to_excel(excel_buffer, index=False, engine='xlsxwriter')
+                
+                # Try to use xlsxwriter first, fall back to openpyxl if not available
+                try:
+                    df.to_excel(excel_buffer, index=False, engine='xlsxwriter')
+                except ImportError:
+                    # Fall back to openpyxl if xlsxwriter is not available
+                    df.to_excel(excel_buffer, index=False, engine='openpyxl')
+                
                 excel_data = excel_buffer.getvalue()
                 
-                st.download_button(
-                    label="📥 Download Excel",
-                    data=excel_data,
-                    file_name=f"{filename}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            except ImportError:
-                st.info("Excel download requires xlsxwriter")
+                if excel_data and len(excel_data) > 0:
+                    st.download_button(
+                        label="📥 Download Excel",
+                        data=excel_data,
+                        file_name=f"{filename}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key=f"{key_prefix}_excel_{counter}"
+                    )
+                else:
+                    st.info("📊 No Excel data available")
+            except Exception as e:
+                st.info("📊 Excel download not available - install xlsxwriter or openpyxl")
         
         with col3:
             # JSON download
             json_data = df.to_json(orient='records', indent=2)
-            st.download_button(
-                label="📥 Download JSON",
-                data=json_data,
-                file_name=f"{filename}.json",
-                mime="application/json"
-            )
+            if json_data and len(json_data.strip()) > 0:
+                st.download_button(
+                    label="📥 Download JSON",
+                    data=json_data,
+                    file_name=f"{filename}.json",
+                    mime="application/json",
+                    key=f"{key_prefix}_json_{counter}"
+                )
+            else:
+                st.info("📋 No JSON data available")
             
     except Exception as e:
         st.error(f"Error creating download buttons: {str(e)}")

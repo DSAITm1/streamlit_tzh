@@ -55,13 +55,24 @@ def render_product_analysis_page(filters: Dict[str, Any]) -> None:
         render_weight_impact_tab(weight_impact)
     
     with tab2:
-        render_category_performance_tab(category_performance)
+        try:
+            render_category_performance_tab(category_performance)
+        except Exception as e:
+            st.error(f"Error in Category Performance tab: {str(e)}")
+            if "🟢 Stars" in str(e):
+                st.info("This error may be related to performance segment data processing. Please check the data format.")
     
     with tab3:
-        render_top_products_tab(category_performance)
+        try:
+            render_top_products_tab(category_performance)
+        except Exception as e:
+            st.error(f"Error in Top Products tab: {str(e)}")
     
     with tab4:
-        render_detailed_analysis_tab(weight_impact, category_performance, filters)
+        try:
+            render_detailed_analysis_tab(weight_impact, category_performance, filters)
+        except Exception as e:
+            st.error(f"Error in Detailed Analysis tab: {str(e)}")
 
 @cache_details()
 def load_weight_impact_data(_data_loader, start_date: str, end_date: str) -> Optional[pl.DataFrame]:
@@ -313,12 +324,12 @@ def render_top_products_tab(category_performance: pl.DataFrame) -> None:
     # Create performance segments
     performance_matrix = category_performance.with_columns([
         pl.when((pl.col("avg_rating") >= 4.0) & (pl.col("on_time_rate") >= 85))
-        .then("🟢 Stars")
+        .then("Stars")
         .when((pl.col("avg_rating") >= 4.0) & (pl.col("on_time_rate") < 85))
-        .then("🟡 Service Issues")
+        .then("Service Issues")
         .when((pl.col("avg_rating") < 4.0) & (pl.col("on_time_rate") >= 85))
-        .then("🟠 Product Issues")
-        .otherwise("🔴 Needs Attention")
+        .then("Product Issues")
+        .otherwise("Needs Attention")
         .alias("Performance Segment")
     ])
     
@@ -455,7 +466,8 @@ def render_detailed_analysis_tab(weight_impact: pl.DataFrame,
                     "Download Category Analysis",
                     csv_data,
                     "category_performance.csv",
-                    "text/csv"
+                    "text/csv",
+                    key="category_performance_download"
                 )
     
     with col2:
@@ -466,7 +478,8 @@ def render_detailed_analysis_tab(weight_impact: pl.DataFrame,
                     "Download Weight Analysis",
                     csv_data,
                     "weight_impact.csv",
-                    "text/csv"
+                    "text/csv",
+                    key="weight_impact_download"
                 )
     
     with col3:

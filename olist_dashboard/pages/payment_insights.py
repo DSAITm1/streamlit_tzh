@@ -38,7 +38,61 @@ def render_payment_insights_page(filters: Dict[str, Any]) -> None:
         installment_analysis = load_installment_analysis_data(data_loader, start_date, end_date)
         revenue_optimization = load_revenue_optimization_data(data_loader, start_date, end_date)
     
-    # Main payment metrics
+    # Debug: Check if dataframes are loaded
+    st.info(f"DEBUG: payment_methods loaded: {payment_methods is not None and not payment_methods.is_empty()}")
+    st.info(f"DEBUG: installment_analysis loaded: {installment_analysis is not None and not installment_analysis.is_empty()}")
+    st.info(f"DEBUG: revenue_optimization loaded: {revenue_optimization is not None and not revenue_optimization.is_empty()}")
+    
+    # Apply fallback calculations immediately after loading data
+    if payment_methods is not None and not payment_methods.is_empty():
+        st.info(f"DEBUG: payment_methods columns before fallback: {list(payment_methods.columns)}")
+        if "total_value" not in payment_methods.columns:
+            st.warning("⚠️ 'total_value' column missing from payment methods data. Using 'avg_order_value' * 'order_count' as fallback.")
+            # Add total_value column as fallback
+            payment_methods = payment_methods.with_columns(
+                (pl.col("avg_order_value") * pl.col("order_count")).alias("total_value")
+            )
+        st.info(f"DEBUG: payment_methods columns after fallback: {list(payment_methods.columns)}")
+    
+    # Apply fallback calculations for installment_analysis
+    if installment_analysis is not None and not installment_analysis.is_empty():
+        st.info(f"DEBUG: installment_analysis columns before fallback: {list(installment_analysis.columns)}")
+        if "total_value" not in installment_analysis.columns:
+            st.warning("⚠️ 'total_value' column missing from installment analysis data. Using 'avg_order_value' * 'order_count' as fallback.")
+            # Add total_value column as fallback
+            installment_analysis = installment_analysis.with_columns(
+                (pl.col("avg_order_value") * pl.col("order_count")).alias("total_value")
+            )
+        st.info(f"DEBUG: installment_analysis columns after fallback: {list(installment_analysis.columns)}")
+    
+    # Apply fallback calculations for revenue_optimization
+    if revenue_optimization is not None and not revenue_optimization.is_empty():
+        st.info(f"DEBUG: revenue_optimization columns before fallback: {list(revenue_optimization.columns)}")
+        if "total_revenue" not in revenue_optimization.columns:
+            if "total_value" in revenue_optimization.columns:
+                st.warning("⚠️ 'total_revenue' column missing from revenue optimization data. Using 'total_value' as fallback.")
+                revenue_optimization = revenue_optimization.with_columns(
+                    pl.col("total_value").alias("total_revenue")
+                )
+            elif "avg_order_value" in revenue_optimization.columns and "order_count" in revenue_optimization.columns:
+                st.warning("⚠️ 'total_revenue' column missing from revenue optimization data. Using 'avg_order_value' * 'order_count' as fallback.")
+                revenue_optimization = revenue_optimization.with_columns(
+                    (pl.col("avg_order_value") * pl.col("order_count")).alias("total_revenue")
+                )
+        
+        if "total_orders" not in revenue_optimization.columns:
+            if "order_count" in revenue_optimization.columns:
+                st.warning("⚠️ 'total_orders' column missing from revenue optimization data. Using 'order_count' as fallback.")
+                revenue_optimization = revenue_optimization.with_columns(
+                    pl.col("order_count").alias("total_orders")
+                )
+        st.info(f"DEBUG: revenue_optimization columns after fallback: {list(revenue_optimization.columns)}")
+    
+    # Debug: Check what columns are actually available
+    if payment_methods is not None and not payment_methods.is_empty():
+        st.info(f"Payment methods columns: {list(payment_methods.columns)}")
+    
+    # Main payment metrics - call this AFTER fallback calculation
     st.subheader("💰 Payment Performance Overview")
     render_payment_overview_kpis(payment_methods, installment_analysis)
     
@@ -95,6 +149,11 @@ def render_payment_overview_kpis(payment_methods: pl.DataFrame, installment_anal
     """Render payment overview KPI cards."""
     if payment_methods is None or payment_methods.is_empty():
         st.warning("No payment methods data available for KPIs")
+        return
+    
+    # Ensure total_value column exists
+    if "total_value" not in payment_methods.columns:
+        st.error("total_value column is missing from payment methods data")
         return
     
     # Calculate aggregate payment metrics
@@ -158,6 +217,11 @@ def render_payment_methods_tab(payment_methods: pl.DataFrame) -> None:
         st.warning("No payment methods data available")
         return
     
+    # Ensure total_value column exists
+    if "total_value" not in payment_methods.columns:
+        st.error("total_value column is missing from payment methods data")
+        return
+    
     # Payment method charts
     render_payment_analysis_charts(payment_methods)
     
@@ -174,7 +238,7 @@ def render_payment_methods_tab(payment_methods: pl.DataFrame) -> None:
             (pl.col("total_value") / payment_methods.select(pl.sum("total_value")).item() * 100).alias("value_share_pct")
         ])
         
-        render_data_table(enhanced_methods, title=None, download=False)
+        render_data_table(enhanced_methods, title="", download=False)
     
     with col2:
         st.markdown("### 💡 Payment Method Insights")
@@ -227,6 +291,16 @@ def render_installment_analysis_tab(installment_analysis: pl.DataFrame) -> None:
         st.warning("No installment analysis data available")
         return
     
+    # Debug: Check installment_analysis columns
+    st.info(f"Installment analysis columns: {list(installment_analysis.columns)}")
+    
+    # Ensure total_value column exists for installment_analysis
+    if "total_value" not in installment_analysis.columns:
+        st.warning("⚠️ 'total_value' column missing from installment analysis data in tab function. Adding fallback.")
+        installment_analysis = installment_analysis.with_columns(
+            (pl.col("avg_order_value") * pl.col("order_count")).alias("total_value")
+        )
+    
     # Installment charts
     render_payment_analysis_charts(installment_analysis)
     
@@ -243,7 +317,7 @@ def render_installment_analysis_tab(installment_analysis: pl.DataFrame) -> None:
             (pl.col("total_value") / installment_analysis.select(pl.sum("total_value")).item() * 100).alias("value_share_pct")
         ])
         
-        render_data_table(enhanced_installments, title=None, download=False)
+        render_data_table(enhanced_installments, title="", download=False)
     
     with col2:
         st.markdown("### 💡 Installment Strategy Insights")
@@ -297,6 +371,26 @@ def render_revenue_optimization_tab(revenue_optimization: pl.DataFrame) -> None:
         st.warning("No revenue optimization data available")
         return
     
+    # Debug: Check revenue_optimization columns
+    st.info(f"Revenue optimization columns: {list(revenue_optimization.columns)}")
+    
+    # Ensure required columns exist
+    if "total_revenue" not in revenue_optimization.columns:
+        if "total_value" in revenue_optimization.columns:
+            revenue_optimization = revenue_optimization.with_columns(
+                pl.col("total_value").alias("total_revenue")
+            )
+        elif "avg_order_value" in revenue_optimization.columns and "order_count" in revenue_optimization.columns:
+            revenue_optimization = revenue_optimization.with_columns(
+                (pl.col("avg_order_value") * pl.col("order_count")).alias("total_revenue")
+            )
+    
+    if "total_orders" not in revenue_optimization.columns:
+        if "order_count" in revenue_optimization.columns:
+            revenue_optimization = revenue_optimization.with_columns(
+                pl.col("order_count").alias("total_orders")
+            )
+    
     # Revenue optimization charts
     render_payment_analysis_charts(revenue_optimization)
     
@@ -312,7 +406,7 @@ def render_revenue_optimization_tab(revenue_optimization: pl.DataFrame) -> None:
             (pl.col("total_revenue") / revenue_optimization.select(pl.sum("total_revenue")).item() * 100).alias("revenue_share_pct")
         ])
         
-        render_data_table(revenue_metrics, title=None, download=False)
+        render_data_table(revenue_metrics, title="", download=False)
     
     with col2:
         st.markdown("### 💡 Revenue Optimization Opportunities")
@@ -362,6 +456,21 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
     st.markdown("### 📋 Analysis Parameters")
     date_range = filters.get("date_range", {})
     st.info(f"📅 Analysis Period: {date_range.get('start_date')} to {date_range.get('end_date')}")
+    
+    # Ensure dataframes have required columns
+    if installment_analysis is not None and not installment_analysis.is_empty():
+        if "total_value" not in installment_analysis.columns:
+            st.warning("⚠️ Adding total_value fallback in advanced analytics tab")
+            installment_analysis = installment_analysis.with_columns(
+                (pl.col("avg_order_value") * pl.col("order_count")).alias("total_value")
+            )
+    
+    if payment_methods is not None and not payment_methods.is_empty():
+        if "total_value" not in payment_methods.columns:
+            st.warning("⚠️ Adding total_value fallback for payment_methods in advanced analytics tab")
+            payment_methods = payment_methods.with_columns(
+                (pl.col("avg_order_value") * pl.col("order_count")).alias("total_value")
+            )
     
     # Payment correlation analysis
     st.markdown("### 🔗 Payment Behavior Correlations")
@@ -437,7 +546,7 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
                     recommendations.append("💰 **Promote debit card** usage with discounts")
         
         if installment_analysis is not None and not installment_analysis.is_empty():
-            multi_installment = installment_analysis.filter(pl.col("installments") > 1)
+            multi_installment = installment_analysis.filter(pl.col("payment_installments") > 1)
             if not multi_installment.is_empty():
                 installment_revenue = multi_installment.select(pl.sum("total_value")).item()
                 total_revenue = installment_analysis.select(pl.sum("total_value")).item()
@@ -518,7 +627,8 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
                     "Download Payment Methods",
                     csv_data,
                     "payment_methods_analysis.csv",
-                    "text/csv"
+                    "text/csv",
+                    key="payment_methods_download"
                 )
     
     with col2:
@@ -529,7 +639,8 @@ def render_advanced_analytics_tab(payment_methods: pl.DataFrame,
                     "Download Installment Analysis",
                     csv_data,
                     "installment_analysis.csv",
-                    "text/csv"
+                    "text/csv",
+                    key="installment_analysis_download"
                 )
     
     with col3:
